@@ -14,7 +14,7 @@ const defaultState: LeagueState = {
 interface LeagueContextType extends LeagueState {
   addPlayer: (name: string, avatar: string) => void;
   removePlayer: (id: string) => void;
-  generateLeague: () => void;
+  generateLeague: (numLegs?: number) => void;
   updateMatchResult: (matchId: string, homeScore: number, awayScore: number) => void;
   resetLeague: () => void;
   loginAdmin: (password: string) => Promise<boolean>;
@@ -98,9 +98,9 @@ export const LeagueProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, []);
 
-  const generateLeague = useCallback(async () => {
+  const generateLeague = useCallback(async (numLegs: number = 1) => {
     try {
-      const res = await fetch(`${API_BASE}/matches/generate`, {
+      const res = await fetch(`${API_BASE}/matches/generate?num_legs=${numLegs}`, {
         method: "POST",
       });
       if (!res.ok) throw new Error("Failed to generate fixtures");

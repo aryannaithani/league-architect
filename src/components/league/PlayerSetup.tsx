@@ -2,12 +2,13 @@ import React, { useState, useRef } from "react";
 import { useLeague } from "@/context/LeagueContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { UserPlus, X, Trophy } from "lucide-react";
+import { UserPlus, X, Trophy, Minus, Plus } from "lucide-react";
 
 const PlayerSetup: React.FC = () => {
   const { players, addPlayer, removePlayer, generateLeague, fixturesGenerated, isAdmin } = useLeague();
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState<string>("");
+  const [numLegs, setNumLegs] = useState(2);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,9 +105,23 @@ const PlayerSetup: React.FC = () => {
       </div>
 
       {!fixturesGenerated && players.length >= 2 && (
-        <Button onClick={generateLeague} className="gap-2 gold-gradient text-primary-foreground font-display tracking-wider">
-          <Trophy className="h-4 w-4" /> GENERATE FIXTURES
-        </Button>
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-muted-foreground uppercase tracking-wider">Rounds</label>
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => setNumLegs(Math.max(1, numLegs - 1))} disabled={numLegs <= 1}>
+                <Minus className="h-3 w-3" />
+              </Button>
+              <span className="font-display text-lg w-8 text-center">{numLegs}</span>
+              <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => setNumLegs(Math.min(4, numLegs + 1))} disabled={numLegs >= 4}>
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+          <Button onClick={() => generateLeague(numLegs)} className="gap-2 gold-gradient text-primary-foreground font-display tracking-wider">
+            <Trophy className="h-4 w-4" /> GENERATE FIXTURES
+          </Button>
+        </div>
       )}
       {!fixturesGenerated && players.length < 2 && (
         <p className="text-sm text-muted-foreground">Add at least 2 players to generate fixtures.</p>
