@@ -17,7 +17,7 @@ interface LeagueContextType extends LeagueState {
   generateLeague: () => void;
   updateMatchResult: (matchId: string, homeScore: number, awayScore: number) => void;
   resetLeague: () => void;
-  loginAdmin: (password: string) => boolean;
+  loginAdmin: (password: string) => Promise<boolean>;
   logoutAdmin: () => void;
 }
 
