@@ -1,37 +1,43 @@
 import { Match, Player, Standing } from "./league-types";
 
-export function generateFixtures(players: Player[]): Match[] {
+export function generateFixtures(players: Player[], numLegs: number = 1): Match[] {
   const n = players.length;
   const ids = players.map((p) => p.id);
 
-  // If odd number of players, add a "bye" placeholder
   const teams = n % 2 === 0 ? [...ids] : [...ids, "BYE"];
   const numTeams = teams.length;
-  const rounds = numTeams - 1;
+  const roundsPerLeg = numTeams - 1;
   const half = numTeams / 2;
 
   const matches: Match[] = [];
   const fixed = teams[0];
   const rotating = teams.slice(1);
 
-  for (let round = 0; round < rounds; round++) {
-    const current = [fixed, ...rotating];
-    for (let i = 0; i < half; i++) {
-      const home = current[i];
-      const away = current[numTeams - 1 - i];
-      if (home === "BYE" || away === "BYE") continue;
-      matches.push({
-        id: `${round}-${i}`,
-        round: round + 1,
-        homeId: round % 2 === 0 ? home : away,
-        awayId: round % 2 === 0 ? away : home,
-        homeScore: null,
-        awayScore: null,
-        played: false,
-      });
+  for (let leg = 0; leg < numLegs; leg++) {
+    // Reset rotation for each leg
+    const rot = [...teams.slice(1)];
+    for (let round = 0; round < roundsPerLeg; round++) {
+      const current = [fixed, ...rot];
+      const matchdayNum = leg * roundsPerLeg + round + 1;
+      for (let i = 0; i < half; i++) {
+        let home = current[i];
+        let away = current[numTeams - 1 - i];
+        if (home === "BYE" || away === "BYE") continue;
+        // Swap home/away on odd rounds and reverse for second leg
+        if (round % 2 !== 0) [home, away] = [away, home];
+        if (leg % 2 !== 0) [home, away] = [away, home];
+        matches.push({
+          id: `${leg}-${round}-${i}`,
+          round: matchdayNum,
+          homeId: home,
+          awayId: away,
+          homeScore: null,
+          awayScore: null,
+          played: false,
+        });
+      }
+      rot.unshift(rot.pop()!);
     }
-    // Rotate: move last element to front of rotating array
-    rotating.unshift(rotating.pop()!);
   }
 
   return matches;
