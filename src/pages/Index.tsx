@@ -7,6 +7,7 @@ import Stats from "@/components/league/Stats";
 import AdminGate from "@/components/league/AdminGate";
 import { Button } from "@/components/ui/button";
 import { Trophy, RotateCcw } from "lucide-react";
+import bgUcl from "@/assets/bg-ucl.jpg";
 
 type Tab = "standings" | "fixtures" | "players" | "stats";
 
@@ -22,7 +23,18 @@ const LeagueApp: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      {/* UCL Background */}
+      <div
+        className="fixed inset-0 z-0 opacity-30 pointer-events-none"
+        style={{
+          backgroundImage: `url(${bgUcl})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      />
+      <div className="relative z-10">
       {/* Header */}
       <header className="border-b border-border bg-card">
         <div className="container max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -69,6 +81,7 @@ const LeagueApp: React.FC = () => {
         {activeTab === "players" && <PlayerSetup />}
         {activeTab === "stats" && <Stats />}
       </main>
+      </div>
     </div>
   );
 };
