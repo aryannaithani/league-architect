@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { LeagueState, Player, Match } from "@/lib/league-types";
 import { generateFixtures } from "@/lib/league-utils";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 const defaultState: LeagueState = {
   players: [],
