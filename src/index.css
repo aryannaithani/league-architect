@@ -2,57 +2,62 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    --background: 230 25% 10%;
-    --foreground: 220 20% 90%;
+    /* Deep navy / midnight blue base - UEFA Champions League inspired */
+    --background: 220 35% 8%;
+    --foreground: 0 0% 98%;
 
-    --card: 230 22% 14%;
-    --card-foreground: 220 20% 90%;
+    /* Card with glassmorphism effect */
+    --card: 220 30% 12%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 230 22% 14%;
-    --popover-foreground: 220 20% 90%;
+    --popover: 220 30% 12%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 213 90% 55%;
+    /* Royal blue and electric cyan accents */
+    --primary: 210 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 230 20% 20%;
-    --secondary-foreground: 220 20% 90%;
+    --secondary: 220 25% 18%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 230 18% 18%;
-    --muted-foreground: 220 15% 55%;
+    --muted: 220 20% 15%;
+    --muted-foreground: 220 10% 65%;
 
-    --accent: 230 30% 25%;
-    --accent-foreground: 220 20% 90%;
+    --accent: 210 80% 45%;
+    --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 63% 50%;
+    --destructive: 0 75% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 230 18% 20%;
-    --input: 230 18% 20%;
-    --ring: 213 90% 55%;
+    --border: 220 25% 20%;
+    --input: 220 25% 18%;
+    --ring: 210 100% 55%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 230 22% 14%;
-    --sidebar-foreground: 220 20% 90%;
-    --sidebar-primary: 213 90% 55%;
+    --sidebar-background: 220 30% 12%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 210 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 230 30% 25%;
-    --sidebar-accent-foreground: 220 20% 90%;
-    --sidebar-border: 230 18% 20%;
-    --sidebar-ring: 213 90% 55%;
+    --sidebar-accent: 220 25% 18%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220 25% 20%;
+    --sidebar-ring: 210 100% 55%;
 
+    /* Sports-specific colors */
     --champion-gold: 43 96% 56%;
     --champion-gold-dim: 43 70% 40%;
     --pitch-green: 142 50% 40%;
-    --win-green: 152 60% 50%;
+    --win-green: 152 70% 45%;
     --draw-amber: 38 92% 50%;
-    --loss-red: 0 65% 55%;
+    --loss-red: 0 70% 55%;
 
-    --font-display: 'ITC Novarese', 'Playfair Display', serif;
+    /* Typography - Modern condensed sans-serif */
+    --font-display: 'Space Grotesk', 'Inter', sans-serif;
     --font-body: 'Inter', sans-serif;
   }
 }
@@ -65,33 +70,158 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    letter-spacing: 0.02em;
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
 }
 
 @layer components {
-  .champion-glow {
-    box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.3);
+  /* Glassmorphism effect */
+  .glass {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  /* Champion glow effect */
+  .champion-glow {
+    box-shadow: 0 0 30px -5px hsl(var(--primary) / 0.4),
+                0 0 60px -10px hsl(var(--primary) / 0.2);
+  }
+
+  .champion-glow-strong {
+    box-shadow: 0 0 40px -5px hsl(var(--primary) / 0.5),
+                0 0 80px -10px hsl(var(--primary) / 0.3);
+  }
+
+  /* Card hover effects */
   .card-hover {
-    @apply transition-all duration-200;
+    @apply transition-all duration-300 ease-out;
   }
   .card-hover:hover {
-    box-shadow: 0 0 30px -5px hsl(var(--primary) / 0.15);
-    border-color: hsl(var(--primary) / 0.3);
+    box-shadow: 0 0 40px -5px hsl(var(--primary) / 0.2),
+                0 8px 24px -8px rgba(0, 0, 0, 0.3);
+    border-color: hsl(var(--primary) / 0.4);
+    transform: translateY(-2px);
   }
 
+  /* Stat badge */
   .stat-badge {
-    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium;
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold;
     background: hsl(var(--secondary));
+    border: 1px solid hsl(var(--border));
   }
 
+  /* Gold gradient for champions */
   .gold-gradient {
     background: linear-gradient(135deg, hsl(var(--champion-gold)), hsl(var(--champion-gold-dim)));
+  }
+
+  /* Neon highlight effect */
+  .neon-highlight {
+    text-shadow: 0 0 10px hsl(var(--primary) / 0.5),
+                 0 0 20px hsl(var(--primary) / 0.3);
+  }
+
+  /* Smooth fade in animation */
+  .fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Slide in from right */
+  .slide-in-right {
+    animation: slideInRight 0.4s ease-out backwards;
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Slide in from bottom */
+  .slide-in-bottom {
+    animation: slideInBottom 0.4s ease-out backwards;
+  }
+
+  @keyframes slideInBottom {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Pulse animation for score updates */
+  .pulse-score {
+    animation: pulseScore 0.6s ease-out;
+  }
+
+  @keyframes pulseScore {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+  }
+
+  /* Form indicator badges */
+  .form-badge {
+    @apply inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold;
+  }
+
+  .form-win {
+    @apply bg-result-win text-white;
+  }
+
+  .form-draw {
+    @apply bg-result-draw text-white;
+  }
+
+  .form-loss {
+    @apply bg-result-loss text-white;
+  }
+
+  /* Hide scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }
