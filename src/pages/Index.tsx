@@ -15,6 +15,20 @@ const LeagueApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>("standings");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isAdmin, resetLeague, fixturesGenerated } = useLeague();
+  const tabRefs = React.useRef<Record<Tab, HTMLButtonElement | null>>({ standings: null, fixtures: null, players: null, stats: null });
+  const [underlineStyle, setUnderlineStyle] = React.useState<{ left: number; width: number }>({ left: 0, width: 0 });
+
+  React.useEffect(() => {
+    const el = tabRefs.current[activeTab];
+    if (el) {
+      const parent = el.parentElement;
+      if (parent) {
+        const parentRect = parent.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        setUnderlineStyle({ left: elRect.left - parentRect.left, width: elRect.width });
+      }
+    }
+  }, [activeTab]);
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "standings", label: "Standings" },
@@ -52,20 +66,25 @@ const LeagueApp: React.FC = () => {
               </div>
 
               {/* Desktop nav tabs */}
-              <nav className="hidden md:flex items-center gap-1">
+              <nav className="hidden md:flex items-center gap-1 relative">
                 {tabs.map((tab) => (
                   <button
                     key={tab.key}
+                    ref={(el) => { tabRefs.current[tab.key] = el; }}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`relative px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200 rounded-md ${
+                    className={`relative px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors duration-200 ${
                       activeTab === tab.key
-                        ? "text-primary bg-primary/10"
-                        : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                        ? "text-primary"
+                        : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     {tab.label}
                   </button>
                 ))}
+                <span
+                  className="absolute bottom-0 h-0.5 bg-primary rounded-full transition-all duration-300 ease-in-out"
+                  style={{ left: underlineStyle.left, width: underlineStyle.width }}
+                />
               </nav>
 
               <div className="hidden md:flex items-center gap-3">
