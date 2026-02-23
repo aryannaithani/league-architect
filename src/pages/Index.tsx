@@ -45,7 +45,7 @@ const LeagueApp: React.FC = () => {
           className="absolute inset-0 opacity-20"
           style={{
             backgroundImage: `url(${bgUcl})`,
-            backgroundSize: "cover",
+            backgroundSize: "contain",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
           }}
