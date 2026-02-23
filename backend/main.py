@@ -63,38 +63,40 @@ def _serialize(doc: dict) -> dict:
     doc.pop("_id", None)
     return doc
 
-def _generate_fixtures(player_ids: list[str]) -> list[dict]:
-    """Round-robin fixture generation (same logic as the frontend)."""
+def _generate_fixtures(player_ids: list[str], num_legs: int = 1) -> list[dict]:
+    """Round-robin fixture generation with multi-leg support."""
     teams = player_ids[:] if len(player_ids) % 2 == 0 else player_ids + ["BYE"]
     n = len(teams)
-    rounds = n - 1
+    rounds_per_leg = n - 1
     half = n // 2
 
     fixed = teams[0]
-    rotating = teams[1:]
     matches = []
 
-    for rnd in range(rounds):
-        current = [fixed] + rotating
-        for i in range(half):
-            home = current[i]
-            away = current[n - 1 - i]
-            if home == "BYE" or away == "BYE":
-                continue
-            if rnd % 2 == 0:
-                h, a = home, away
-            else:
-                h, a = away, home
-            matches.append({
-                "id": str(uuid.uuid4()),
-                "round": rnd + 1,
-                "home_id": h,
-                "away_id": a,
-                "home_score": None,
-                "away_score": None,
-                "played": False,
-            })
-        rotating = [rotating[-1]] + rotating[:-1]   # rotate
+    for leg in range(num_legs):
+        rotating = teams[1:]
+        for rnd in range(rounds_per_leg):
+            current = [fixed] + rotating
+            matchday = leg * rounds_per_leg + rnd + 1
+            for i in range(half):
+                home = current[i]
+                away = current[n - 1 - i]
+                if home == "BYE" or away == "BYE":
+                    continue
+                if rnd % 2 != 0:
+                    home, away = away, home
+                if leg % 2 != 0:
+                    home, away = away, home
+                matches.append({
+                    "id": str(uuid.uuid4()),
+                    "round": matchday,
+                    "home_id": home,
+                    "away_id": away,
+                    "home_score": None,
+                    "away_score": None,
+                    "played": False,
+                })
+            rotating = [rotating[-1]] + rotating[:-1]
 
     return matches
 
@@ -135,7 +137,7 @@ def get_matches():
 
 
 @app.post("/matches/generate", status_code=201)
-def generate_fixtures():
+def generate_fixtures(num_legs: int = 1):
     state = _get_state()
     if state["fixtures_generated"]:
         raise HTTPException(400, "Fixtures already generated.")
@@ -144,7 +146,8 @@ def generate_fixtures():
     if len(player_ids) < 2:
         raise HTTPException(400, "Need at least 2 players to generate fixtures.")
 
-    fixtures = _generate_fixtures(player_ids)
+    num_legs = max(1, min(4, num_legs))
+    fixtures = _generate_fixtures(player_ids, num_legs)
     if fixtures:
         matches_col.insert_many(fixtures)
     state_col.update_one({}, {"$set": {"fixtures_generated": True}})

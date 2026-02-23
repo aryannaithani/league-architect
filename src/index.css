@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Barlow:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -56,9 +56,9 @@
     --draw-amber: 38 92% 50%;
     --loss-red: 0 70% 55%;
 
-    /* Typography - Modern condensed sans-serif */
-    --font-display: 'Space Grotesk', 'Inter', sans-serif;
-    --font-body: 'Inter', sans-serif;
+    /* Typography - Clean, athletic condensed sans-serif */
+    --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+    --font-body: 'Barlow', 'Helvetica Neue', sans-serif;
   }
 }
 
