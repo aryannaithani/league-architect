@@ -25,7 +25,7 @@ const LeagueApp: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-x-hidden">
-      {/* Animated gradient background */}
+      {/* Background */}
       <div className="fixed inset-0 z-0">
         <div
           className="absolute inset-0 opacity-20"
@@ -41,45 +41,58 @@ const LeagueApp: React.FC = () => {
       </div>
 
       <div className="relative z-10">
-        {/* Sticky Header with Glassmorphism */}
+        {/* Header */}
         <header className="sticky top-0 z-50 glass-strong border-b border-white/10">
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16 md:h-20">
-              <div className="flex items-center gap-3 group">
-                <div className="relative">
-                  <Trophy className="h-6 w-6 md:h-7 md:w-7 text-primary transition-transform group-hover:scale-110 group-hover:rotate-12" />
-                  <div className="absolute inset-0 text-primary blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
-                </div>
-                <h1 className="font-display text-lg md:text-2xl font-bold tracking-tight uppercase neon-highlight">
+            <div className="flex items-center justify-between h-14 md:h-16">
+              <div className="flex items-center gap-3">
+                <h1 className="font-display text-base md:text-xl font-bold tracking-tight uppercase">
                   eFootball League
                 </h1>
               </div>
-              
-              <div className="hidden md:flex items-center gap-4">
-                {isAdmin && fixturesGenerated && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={resetLeague} 
-                    className="gap-2 text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all"
+
+              {/* Desktop nav tabs */}
+              <nav className="hidden md:flex items-center gap-1">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`relative px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200 rounded-md ${
+                      activeTab === tab.key
+                        ? "text-primary bg-primary/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                    }`}
                   >
-                    <RotateCcw className="h-4 w-4" /> 
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+
+              <div className="hidden md:flex items-center gap-3">
+                {isAdmin && fixturesGenerated && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={resetLeague}
+                    className="gap-2 text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  >
+                    <RotateCcw className="h-4 w-4" />
                     <span className="text-xs font-medium">Reset</span>
                   </Button>
                 )}
                 <AdminGate />
               </div>
 
-              {/* Mobile menu button */}
+              {/* Mobile hamburger */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="md:hidden p-2 rounded-lg hover:bg-white/5 transition-colors"
                 aria-label="Toggle menu"
               >
                 {mobileMenuOpen ? (
-                  <X className="h-6 w-6 text-foreground" />
+                  <X className="h-5 w-5 text-foreground" />
                 ) : (
-                  <Menu className="h-6 w-6 text-foreground" />
+                  <Menu className="h-5 w-5 text-foreground" />
                 )}
               </button>
             </div>
@@ -88,30 +101,46 @@ const LeagueApp: React.FC = () => {
           {/* Mobile menu backdrop */}
           {mobileMenuOpen && (
             <div
-              className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 top-16"
+              className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 top-14"
               onClick={() => setMobileMenuOpen(false)}
             />
           )}
 
-          {/* Mobile menu dropdown */}
+          {/* Mobile dropdown with tabs + admin */}
           {mobileMenuOpen && (
             <div className="md:hidden glass-strong border-t border-white/10 slide-in-right relative z-50">
-              <div className="container max-w-7xl mx-auto px-4 py-4 space-y-3">
-                {isAdmin && fixturesGenerated && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+              <div className="container max-w-7xl mx-auto px-4 py-3 space-y-1">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.key}
                     onClick={() => {
-                      resetLeague();
+                      setActiveTab(tab.key);
                       setMobileMenuOpen(false);
-                    }} 
-                    className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground hover:bg-white/5"
+                    }}
+                    className={`w-full text-left px-4 py-3 rounded-lg text-sm font-semibold uppercase tracking-wider transition-colors ${
+                      activeTab === tab.key
+                        ? "text-primary bg-primary/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                    }`}
                   >
-                    <RotateCcw className="h-4 w-4" /> 
-                    <span>Reset League</span>
-                  </Button>
-                )}
-                <div className="pt-2 border-t border-white/10">
+                    {tab.label}
+                  </button>
+                ))}
+                <div className="pt-2 mt-2 border-t border-white/10 space-y-1">
+                  {isAdmin && fixturesGenerated && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        resetLeague();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground hover:bg-white/5"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      <span>Reset League</span>
+                    </Button>
+                  )}
                   <AdminGate />
                 </div>
               </div>
@@ -119,34 +148,7 @@ const LeagueApp: React.FC = () => {
           )}
         </header>
 
-        {/* Navigation Tabs */}
-        <nav className="sticky top-16 md:top-20 z-40 glass border-b border-white/10">
-          <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex gap-0 overflow-x-auto scrollbar-hide">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => {
-                    setActiveTab(tab.key);
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`relative px-4 md:px-6 py-4 font-display text-xs md:text-sm font-semibold uppercase tracking-wider transition-all duration-300 whitespace-nowrap ${
-                    activeTab === tab.key
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {tab.label}
-                  {activeTab === tab.key && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary neon-highlight" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        </nav>
-
-        {/* Content with fade-in animation */}
+        {/* Content */}
         <main className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
           <div className="fade-in">
             {activeTab === "standings" && <Standings />}
