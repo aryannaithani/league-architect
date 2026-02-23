@@ -7,7 +7,7 @@ import Stats from "@/components/league/Stats";
 import AdminGate from "@/components/league/AdminGate";
 import { Button } from "@/components/ui/button";
 import { Trophy, RotateCcw, Menu, X } from "lucide-react";
-import bgUcl from "@/assets/bg-ucl.jpg";
+import bgUcl from "@/assets/bg-ucl.png";
 
 type Tab = "standings" | "fixtures" | "players" | "stats";
 
