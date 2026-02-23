@@ -143,6 +143,19 @@ const Standings: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        <div className="px-4 py-3 border-t border-white/10">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
+            <span><strong className="text-foreground/70">P</strong> – Played</span>
+            <span><strong className="text-foreground/70">W</strong> – Won</span>
+            <span><strong className="text-foreground/70">D</strong> – Drawn</span>
+            <span><strong className="text-foreground/70">L</strong> – Lost</span>
+            <span><strong className="text-foreground/70">GF</strong> – Goals For</span>
+            <span><strong className="text-foreground/70">GA</strong> – Goals Against</span>
+            <span><strong className="text-foreground/70">GD</strong> – Goal Difference</span>
+            <span><strong className="text-foreground/70">PTS</strong> – Points</span>
+          </div>
+        </div>
       </div>
     </div>
   );
