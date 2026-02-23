@@ -66,7 +66,7 @@ const LeagueApp: React.FC = () => {
               </div>
 
               {/* Desktop nav tabs */}
-              <nav className="hidden md:flex items-center gap-1 relative">
+              <nav className="hidden md:flex items-center gap-1 relative h-full">
                 {tabs.map((tab) => (
                   <button
                     key={tab.key}
@@ -82,7 +82,7 @@ const LeagueApp: React.FC = () => {
                   </button>
                 ))}
                 <span
-                  className="absolute bottom-0 h-0.5 bg-primary rounded-full transition-all duration-300 ease-in-out"
+                  className="absolute -bottom-[1px] h-0.5 bg-primary rounded-full transition-all duration-300 ease-in-out"
                   style={{ left: underlineStyle.left, width: underlineStyle.width }}
                 />
               </nav>
