@@ -4,18 +4,19 @@ import PlayerSetup from "@/components/league/PlayerSetup";
 import Fixtures from "@/components/league/Fixtures";
 import Standings from "@/components/league/Standings";
 import Stats from "@/components/league/Stats";
+import Knockout from "@/components/league/Knockout";
 import AdminGate from "@/components/league/AdminGate";
 import { Button } from "@/components/ui/button";
 import { Trophy, RotateCcw, Menu, X } from "lucide-react";
 import bgUcl from "@/assets/Gemini_Generated_Image_cj3bukcj3bukcj3b.jpg";
 
-type Tab = "standings" | "fixtures" | "players" | "stats";
+type Tab = "standings" | "fixtures" | "knockout" | "players" | "stats";
 
 const LeagueApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>("standings");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isAdmin, resetLeague, fixturesGenerated } = useLeague();
-  const tabRefs = React.useRef<Record<Tab, HTMLButtonElement | null>>({ standings: null, fixtures: null, players: null, stats: null });
+  const tabRefs = React.useRef<Record<Tab, HTMLButtonElement | null>>({ standings: null, fixtures: null, knockout: null, players: null, stats: null });
   const [underlineStyle, setUnderlineStyle] = React.useState<{ left: number; width: number }>({ left: 0, width: 0 });
 
   React.useEffect(() => {
@@ -33,6 +34,7 @@ const LeagueApp: React.FC = () => {
   const tabs: { key: Tab; label: string }[] = [
     { key: "standings", label: "Standings" },
     { key: "fixtures", label: "Fixtures" },
+    { key: "knockout", label: "Knockout" },
     { key: "players", label: "Players" },
     { key: "stats", label: "Stats" },
   ];
@@ -60,7 +62,7 @@ const LeagueApp: React.FC = () => {
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-14 md:h-16">
               <div className="flex items-center gap-3">
-                <h1 class="font-display text-2xl md:text-4xl font-semibold tracking-wide leading-tight">eFootball League</h1>
+                <h1 className="font-display text-2xl md:text-4xl font-semibold tracking-wide leading-tight">eFootball League</h1>
               </div>
 
               {/* Desktop nav tabs */}
@@ -170,6 +172,7 @@ const LeagueApp: React.FC = () => {
           <div className="fade-in">
             {activeTab === "standings" && <Standings />}
             {activeTab === "fixtures" && <Fixtures />}
+            {activeTab === "knockout" && <Knockout />}
             {activeTab === "players" && <PlayerSetup />}
             {activeTab === "stats" && <Stats />}
           </div>

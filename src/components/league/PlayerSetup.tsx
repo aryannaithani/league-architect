@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { UserPlus, X, Trophy, Minus, Plus, Users } from "lucide-react";
 
 const PlayerSetup: React.FC = () => {
-  const { players, addPlayer, removePlayer, generateLeague, fixturesGenerated, isAdmin } = useLeague();
+  const { players, addPlayer, removePlayer, generateLeague, fixturesGenerated, isAdmin, eliminatedPlayerIds } = useLeague();
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState<string>("");
   const [numLegs, setNumLegs] = useState(2);
@@ -48,36 +48,37 @@ const PlayerSetup: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {players.map((p, idx) => (
-              <div
-                key={p.id}
-                className="glass-strong rounded-xl border border-white/10 overflow-hidden card-hover slide-in-right"
-                style={{ animationDelay: `${idx * 50}ms` }}
-              >
-                <div className="relative p-6 flex flex-col items-center">
-                  {/* Gradient background effect */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 opacity-50" />
-                  
-                  {/* Avatar with glow effect */}
-                  <div className="relative z-10 mb-4">
-                    <div className="h-20 w-20 md:h-24 md:w-24 rounded-full overflow-hidden border-2 border-primary/30 champion-glow flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-                      {p.avatar ? (
-                        <img src={p.avatar} alt={p.name} className="h-full w-full object-cover" />
-                      ) : (
-                        <span className="font-display text-3xl md:text-4xl font-bold text-primary">
-                          {p.name[0]?.toUpperCase()}
-                        </span>
-                      )}
+            {players.map((p, idx) => {
+              const isEliminated = eliminatedPlayerIds.includes(p.id);
+              return (
+                <div
+                  key={p.id}
+                  className={`glass-strong rounded-xl border border-white/10 overflow-hidden card-hover slide-in-right ${isEliminated ? "opacity-30 grayscale" : ""}`}
+                  style={{ animationDelay: `${idx * 50}ms` }}
+                >
+                  <div className="relative p-6 flex flex-col items-center">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 opacity-50" />
+                    <div className="relative z-10 mb-4">
+                      <div className="h-20 w-20 md:h-24 md:w-24 rounded-full overflow-hidden border-2 border-primary/30 champion-glow flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+                        {p.avatar ? (
+                          <img src={p.avatar} alt={p.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="font-display text-3xl md:text-4xl font-bold text-primary">
+                            {p.name[0]?.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
                     </div>
+                    <h3 className="relative z-10 font-display text-base md:text-lg font-bold text-foreground text-center truncate w-full">
+                      {p.name}
+                    </h3>
+                    {isEliminated && (
+                      <span className="relative z-10 text-[10px] uppercase tracking-wider text-result-loss font-semibold mt-1">Eliminated</span>
+                    )}
                   </div>
-
-                  {/* Player name */}
-                  <h3 className="relative z-10 font-display text-base md:text-lg font-bold text-foreground text-center truncate w-full">
-                    {p.name}
-                  </h3>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -144,45 +145,46 @@ const PlayerSetup: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {players.map((p, idx) => (
-            <div
-              key={p.id}
-              className="group relative glass-strong rounded-xl border border-white/10 overflow-hidden card-hover slide-in-right"
-              style={{ animationDelay: `${idx * 50}ms` }}
-            >
-              {!fixturesGenerated && (
-                <button
-                  onClick={() => removePlayer(p.id)}
-                  className="absolute top-2 right-2 z-20 rounded-full bg-destructive p-1.5 opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-lg"
-                >
-                  <X className="h-3.5 w-3.5 text-destructive-foreground" />
-                </button>
-              )}
+          {players.map((p, idx) => {
+            const isEliminated = eliminatedPlayerIds.includes(p.id);
+            return (
+              <div
+                key={p.id}
+                className={`group relative glass-strong rounded-xl border border-white/10 overflow-hidden card-hover slide-in-right ${isEliminated ? "opacity-30 grayscale" : ""}`}
+                style={{ animationDelay: `${idx * 50}ms` }}
+              >
+                {!fixturesGenerated && (
+                  <button
+                    onClick={() => removePlayer(p.id)}
+                    className="absolute top-2 right-2 z-20 rounded-full bg-destructive p-1.5 opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-lg"
+                  >
+                    <X className="h-3.5 w-3.5 text-destructive-foreground" />
+                  </button>
+                )}
 
-              <div className="relative p-6 flex flex-col items-center">
-                {/* Gradient background effect */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 opacity-50" />
-                
-                {/* Avatar with glow effect */}
-                <div className="relative z-10 mb-4">
-                  <div className="h-20 w-20 md:h-24 md:w-24 rounded-full overflow-hidden border-2 border-primary/30 champion-glow flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 transition-transform group-hover:scale-110">
-                    {p.avatar ? (
-                      <img src={p.avatar} alt={p.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <span className="font-display text-3xl md:text-4xl font-bold text-primary">
-                        {p.name[0]?.toUpperCase()}
-                      </span>
-                    )}
+                <div className="relative p-6 flex flex-col items-center">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 opacity-50" />
+                  <div className="relative z-10 mb-4">
+                    <div className="h-20 w-20 md:h-24 md:w-24 rounded-full overflow-hidden border-2 border-primary/30 champion-glow flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 transition-transform group-hover:scale-110">
+                      {p.avatar ? (
+                        <img src={p.avatar} alt={p.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="font-display text-3xl md:text-4xl font-bold text-primary">
+                          {p.name[0]?.toUpperCase()}
+                        </span>
+                      )}
+                    </div>
                   </div>
+                  <h3 className="relative z-10 font-display text-base md:text-lg font-bold text-foreground text-center truncate w-full">
+                    {p.name}
+                  </h3>
+                  {isEliminated && (
+                    <span className="relative z-10 text-[10px] uppercase tracking-wider text-result-loss font-semibold mt-1">Eliminated</span>
+                  )}
                 </div>
-
-                {/* Player name */}
-                <h3 className="relative z-10 font-display text-base md:text-lg font-bold text-foreground text-center truncate w-full">
-                  {p.name}
-                </h3>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

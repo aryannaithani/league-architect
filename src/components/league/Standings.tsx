@@ -5,7 +5,7 @@ import { Match } from "@/lib/league-types";
 import { TrendingUp } from "lucide-react";
 
 const Standings: React.FC = () => {
-  const { players, matches, fixturesGenerated } = useLeague();
+  const { players, matches, fixturesGenerated, qualifiedPlayerIds } = useLeague();
 
   const getPlayerForm = (playerId: string, matches: Match[]): ("W" | "D" | "L")[] => {
     const playerMatches = matches
@@ -74,13 +74,17 @@ const Standings: React.FC = () => {
               {standings.map((s, i) => {
                 const player = getPlayer(s.playerId);
                 const form = getPlayerForm(s.playerId, matches);
+                const isQualified = i < 4;
 
                 return (
                   <tr
                     key={s.playerId}
-                    className="border-b border-white/5 transition-colors hover:bg-white/5"
+                    className="border-b border-white/5 transition-colors hover:bg-white/5 relative"
                   >
-                    <td className="px-3 md:px-4 py-3">
+                    <td className="px-3 md:px-4 py-3 relative">
+                      {isQualified && (
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-pitch rounded-r" />
+                      )}
                       <span className="font-display font-bold text-sm text-muted-foreground">
                         {i + 1}
                       </span>
@@ -146,6 +150,10 @@ const Standings: React.FC = () => {
 
         <div className="px-4 py-3 border-t border-white/10">
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-3 bg-pitch rounded-sm" />
+              <strong className="text-foreground/70">Knockout qualification</strong>
+            </span>
             <span><strong className="text-foreground/70">P</strong> – Played</span>
             <span><strong className="text-foreground/70">W</strong> – Won</span>
             <span><strong className="text-foreground/70">D</strong> – Drawn</span>
