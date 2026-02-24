@@ -14,6 +14,17 @@ export interface Match {
   played: boolean;
 }
 
+export interface KnockoutMatch {
+  id: string;
+  stage: "semi" | "final";
+  matchIndex: number; // 0 or 1 for semis, 0 for final
+  homeId: string | null;
+  awayId: string | null;
+  homeScore: number | null;
+  awayScore: number | null;
+  played: boolean;
+}
+
 export interface Standing {
   playerId: string;
   played: number;
@@ -29,6 +40,8 @@ export interface Standing {
 export interface LeagueState {
   players: Player[];
   matches: Match[];
+  knockoutMatches: KnockoutMatch[];
   fixturesGenerated: boolean;
+  leagueComplete: boolean;
   isAdmin: boolean;
 }

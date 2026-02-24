@@ -30,7 +30,7 @@ const AnimatedCounter: React.FC<{ value: number; duration?: number }> = ({ value
 };
 
 const Stats: React.FC = () => {
-  const { players, matches, fixturesGenerated } = useLeague();
+  const { players, matches, knockoutMatches, fixturesGenerated } = useLeague();
 
   if (!fixturesGenerated) {
     return (
@@ -42,7 +42,20 @@ const Stats: React.FC = () => {
     );
   }
 
-  const stats = getLeagueStats(players, matches);
+  // Combine league + KO matches for cumulative stats
+  const allMatches = [
+    ...matches,
+    ...knockoutMatches.filter((m) => m.played && m.homeId && m.awayId).map((m) => ({
+      id: m.id,
+      round: 999,
+      homeId: m.homeId!,
+      awayId: m.awayId!,
+      homeScore: m.homeScore,
+      awayScore: m.awayScore,
+      played: m.played,
+    })),
+  ];
+  const stats = getLeagueStats(players, allMatches);
   const getPlayer = (id: string) => players.find((p) => p.id === id);
   const progressPercentage = stats.totalMatches > 0 ? (stats.matchesPlayed / stats.totalMatches) * 100 : 0;
 
