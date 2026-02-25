@@ -224,4 +224,20 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* KO bracket connecting line animation */
+  .ko-line {
+    stroke-dasharray: 300;
+    stroke-dashoffset: 300;
+    animation: drawLine 1.5s ease-out forwards;
+  }
+  .ko-line-delay {
+    animation-delay: 0.3s;
+  }
+
+  @keyframes drawLine {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
 }

@@ -16,7 +16,6 @@ const Knockout: React.FC = () => {
   const semis = knockoutMatches.filter((m) => m.stage === "semi").sort((a, b) => a.matchIndex - b.matchIndex);
   const final = knockoutMatches.find((m) => m.stage === "final") || null;
 
-  // Find the champion
   const champion = final?.played
     ? getPlayer(final.homeScore! > final.awayScore! ? final.homeId : final.awayId)
     : null;
@@ -25,7 +24,7 @@ const Knockout: React.FC = () => {
     const hs = parseInt(homeScore);
     const as_ = parseInt(awayScore);
     if (isNaN(hs) || isNaN(as_) || hs < 0 || as_ < 0) return;
-    if (hs === as_) return; // No draws in KO
+    if (hs === as_) return;
     await updateKnockoutResult(matchId, hs, as_);
     setEditing(null);
     setHomeScore("");
@@ -48,32 +47,31 @@ const Knockout: React.FC = () => {
     );
   }
 
-  // League not complete — show placeholder bracket
   const renderPlaceholder = !leagueComplete;
 
-  const renderPlayerSlot = (playerId: string | null, side: "home" | "away", isWinner?: boolean) => {
+  const renderPlayerSlot = (playerId: string | null, label: string | null, isWinner?: boolean) => {
     const player = getPlayer(playerId);
-    const placeholderLabel = playerId ? player?.name : "TBD";
+    const displayName = player?.name ?? label ?? "TBD";
 
     return (
-      <div className={`flex items-center gap-2.5 ${side === "away" ? "flex-row-reverse" : ""} ${isWinner ? "opacity-100" : playerId ? "opacity-90" : "opacity-40"}`}>
+      <div className={`flex items-center gap-2.5 ${isWinner ? "opacity-100" : playerId ? "opacity-90" : "opacity-40"}`}>
         <div className={`h-10 w-10 rounded-full overflow-hidden flex-shrink-0 border-2 flex items-center justify-center bg-secondary ${isWinner ? "border-champion-gold champion-glow" : "border-white/10"}`}>
           {player?.avatar ? (
             <img src={player.avatar} alt="" className="h-full w-full object-cover" />
           ) : (
             <span className="text-xs font-display font-bold text-primary">
-              {placeholderLabel?.[0]?.toUpperCase() ?? "?"}
+              {displayName[0]?.toUpperCase() ?? "?"}
             </span>
           )}
         </div>
         <span className={`font-semibold text-sm truncate ${isWinner ? "text-champion-gold" : "text-foreground"}`}>
-          {placeholderLabel ?? "TBD"}
+          {displayName}
         </span>
       </div>
     );
   };
 
-  const renderMatch = (match: KnockoutMatch | null, label: string) => {
+  const renderMatch = (match: KnockoutMatch | null, label: string, homeLabel?: string, awayLabel?: string) => {
     if (!match) return null;
     const isEditing = editing === match.id;
     const canEdit = isAdmin && !match.played && match.homeId && match.awayId;
@@ -87,9 +85,8 @@ const Knockout: React.FC = () => {
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
         </div>
         <div className="p-4 space-y-3">
-          {/* Home */}
           <div className="flex items-center justify-between">
-            {renderPlayerSlot(match.homeId, "home", homeWinner)}
+            {renderPlayerSlot(match.homeId, homeLabel ?? "TBD", homeWinner)}
             {match.played && (
               <span className={`font-display text-xl font-bold ${homeWinner ? "text-result-win" : "text-muted-foreground"}`}>
                 {match.homeScore}
@@ -97,12 +94,10 @@ const Knockout: React.FC = () => {
             )}
           </div>
 
-          {/* Divider */}
           <div className="border-t border-white/5" />
 
-          {/* Away */}
           <div className="flex items-center justify-between">
-            {renderPlayerSlot(match.awayId, "home", awayWinner)}
+            {renderPlayerSlot(match.awayId, awayLabel ?? "TBD", awayWinner)}
             {match.played && (
               <span className={`font-display text-xl font-bold ${awayWinner ? "text-result-win" : "text-muted-foreground"}`}>
                 {match.awayScore}
@@ -110,7 +105,6 @@ const Knockout: React.FC = () => {
             )}
           </div>
 
-          {/* Edit / Score Input */}
           {isEditing ? (
             <div className="flex items-center justify-center gap-2 pt-2">
               <Input
@@ -151,11 +145,11 @@ const Knockout: React.FC = () => {
     );
   };
 
-  // For placeholder mode, create fake matches
+  // Placeholder mode: show seed labels, not actual players
   const placeholderSemis: KnockoutMatch[] = renderPlaceholder
     ? [
-        { id: "ph-s0", stage: "semi", matchIndex: 0, homeId: qualifiedPlayerIds[0] ?? null, awayId: qualifiedPlayerIds[3] ?? null, homeScore: null, awayScore: null, played: false },
-        { id: "ph-s1", stage: "semi", matchIndex: 1, homeId: qualifiedPlayerIds[1] ?? null, awayId: qualifiedPlayerIds[2] ?? null, homeScore: null, awayScore: null, played: false },
+        { id: "ph-s0", stage: "semi", matchIndex: 0, homeId: null, awayId: null, homeScore: null, awayScore: null, played: false },
+        { id: "ph-s1", stage: "semi", matchIndex: 1, homeId: null, awayId: null, homeScore: null, awayScore: null, played: false },
       ]
     : semis;
 
@@ -165,6 +159,11 @@ const Knockout: React.FC = () => {
 
   const displaySemis = renderPlaceholder ? placeholderSemis : semis;
   const displayFinal = renderPlaceholder ? placeholderFinal : final;
+
+  const semiLabels = [
+    { home: "1st", away: "4th" },
+    { home: "2nd", away: "3rd" },
+  ];
 
   return (
     <div className="space-y-8 fade-in">
@@ -196,28 +195,60 @@ const Knockout: React.FC = () => {
         </div>
       )}
 
-      {/* Bracket layout */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+      {/* Bracket layout with connecting lines */}
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-0 items-center">
         {/* Semis */}
         <div className="space-y-4">
           <h3 className="font-display text-sm uppercase tracking-wider text-muted-foreground font-semibold text-center">Semifinals</h3>
           {displaySemis.map((s, i) => (
             <div key={s.id} className={renderPlaceholder ? "opacity-50" : ""}>
-              {renderMatch(s, `Semi-Final ${i + 1}`)}
+              {renderMatch(
+                s,
+                `Semi-Final ${i + 1}`,
+                renderPlaceholder ? semiLabels[i].home : undefined,
+                renderPlaceholder ? semiLabels[i].away : undefined,
+              )}
             </div>
           ))}
         </div>
 
-        {/* Connector lines (visual) */}
-        <div className="hidden md:flex items-center justify-center">
-          <div className="w-full h-px border-t border-dashed border-white/20" />
+        {/* Connecting lines */}
+        <div className="hidden md:flex flex-col items-center justify-center px-2 relative" style={{ height: "280px" }}>
+          {/* Top semi connector */}
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 80 280" fill="none" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="lineGradient1" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="hsl(210 100% 50% / 0.6)" />
+                <stop offset="100%" stopColor="hsl(210 100% 50% / 0.3)" />
+              </linearGradient>
+              {/* Animated glow */}
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="2" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            {/* Semi 1 to Final */}
+            <path d="M 0 70 L 40 70 L 40 140 L 80 140" stroke="url(#lineGradient1)" strokeWidth="2" filter="url(#glow)" className="ko-line" />
+            {/* Semi 2 to Final */}
+            <path d="M 0 210 L 40 210 L 40 140 L 80 140" stroke="url(#lineGradient1)" strokeWidth="2" filter="url(#glow)" className="ko-line ko-line-delay" />
+            {/* Animated particles */}
+            <circle r="3" fill="hsl(210 100% 60%)" filter="url(#glow)">
+              <animateMotion dur="3s" repeatCount="indefinite" path="M 0 70 L 40 70 L 40 140 L 80 140" />
+            </circle>
+            <circle r="3" fill="hsl(210 100% 60%)" filter="url(#glow)">
+              <animateMotion dur="3s" repeatCount="indefinite" begin="1.5s" path="M 0 210 L 40 210 L 40 140 L 80 140" />
+            </circle>
+          </svg>
         </div>
 
         {/* Final */}
         <div className="space-y-4">
           <h3 className="font-display text-sm uppercase tracking-wider text-champion-gold font-semibold text-center">Final</h3>
           <div className={renderPlaceholder ? "opacity-50" : ""}>
-            {renderMatch(displayFinal, "Final")}
+            {renderMatch(displayFinal, "Final", renderPlaceholder ? "SF1 Winner" : undefined, renderPlaceholder ? "SF2 Winner" : undefined)}
           </div>
         </div>
       </div>
