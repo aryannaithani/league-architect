@@ -37,17 +37,7 @@ const AnimatedCounter: React.FC<{ value: number; duration?: number }> = ({ value
 const Stats: React.FC = () => {
   const { players, matches, knockoutMatches, fixturesGenerated } = useLeague();
 
-  if (!fixturesGenerated) {
-    return (
-      <div className="text-center py-16 text-muted-foreground fade-in">
-        <BarChart3 className="h-12 w-12 mx-auto mb-4 text-primary/30" />
-        <p className="font-display text-xl font-semibold mb-2">No Stats Yet</p>
-        <p className="text-sm">Play some matches to see statistics</p>
-      </div>
-    );
-  }
-
-  // Combine league + KO matches for cumulative stats
+  // All hooks must be before any early return
   const allMatches = useMemo(() => [
     ...matches,
     ...knockoutMatches.filter((m) => m.played && m.homeId && m.awayId).map((m) => ({
@@ -58,16 +48,12 @@ const Stats: React.FC = () => {
   const stats = useMemo(() => getLeagueStats(players, allMatches), [players, allMatches]);
   const getPlayer = (id: string) => players.find((p) => p.id === id);
 
-  // Best defense (least goals conceded among players who have played)
   const standings = useMemo(() => calculateStandings(players, allMatches), [players, allMatches]);
   const bestDefense = useMemo(() => {
     const played = standings.filter((s) => s.played > 0);
     return played.length > 0 ? played.reduce((a, b) => a.goalsAgainst < b.goalsAgainst ? a : b) : null;
   }, [standings]);
 
-  const progressPercentage = stats.totalMatches > 0 ? (stats.matchesPlayed / stats.totalMatches) * 100 : 0;
-
-  // Position history chart data
   const positionData = useMemo(() => {
     if (players.length === 0) return [];
     const leagueMatches = matches.filter(m => m.played);
@@ -85,6 +71,18 @@ const Stats: React.FC = () => {
       return entry;
     });
   }, [players, matches]);
+
+  if (!fixturesGenerated) {
+    return (
+      <div className="text-center py-16 text-muted-foreground fade-in">
+        <BarChart3 className="h-12 w-12 mx-auto mb-4 text-primary/30" />
+        <p className="font-display text-xl font-semibold mb-2">No Stats Yet</p>
+        <p className="text-sm">Play some matches to see statistics</p>
+      </div>
+    );
+  }
+
+  const progressPercentage = stats.totalMatches > 0 ? (stats.matchesPlayed / stats.totalMatches) * 100 : 0;
 
   const statCards = [
     {
