@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useLeague } from "@/context/LeagueContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,27 @@ const AdminGate: React.FC = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+        setPassword("");
+        setError(false);
+      }
+    };
+    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
 
   if (isAdmin) {
     return (
@@ -30,16 +51,31 @@ const AdminGate: React.FC = () => {
     if (success) {
       setPassword("");
       setError(false);
+      setIsOpen(false);
     } else {
       setError(true);
     }
     setIsLoading(false);
   };
 
+  if (!isOpen) {
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setIsOpen(true)}
+        className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all"
+      >
+        <Shield className="h-4 w-4" />
+      </Button>
+    );
+  }
+
   return (
-    <div className="flex items-center gap-2">
+    <div ref={containerRef} className="flex items-center gap-2 fade-in">
       <Lock className="h-4 w-4 text-muted-foreground" />
       <Input
+        ref={inputRef}
         type="password"
         placeholder="Admin password"
         value={password}
@@ -57,7 +93,7 @@ const AdminGate: React.FC = () => {
         variant="ghost"
         onClick={handleLogin}
         disabled={isLoading}
-        className="h-9 px-3 hover:bg-white/5"
+        className="h-9 w-9 p-0 hover:bg-white/5"
       >
         <Shield className="h-4 w-4" />
       </Button>

@@ -1,8 +1,80 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { useLeague } from "@/context/LeagueContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserPlus, X, Trophy, Minus, Plus, Users } from "lucide-react";
+
+// Generate deterministic random ratings 80-100 based on player id
+function getPlayerRatings(playerId: string) {
+  let hash = 0;
+  for (let i = 0; i < playerId.length; i++) {
+    hash = ((hash << 5) - hash) + playerId.charCodeAt(i);
+    hash |= 0;
+  }
+  const att = 80 + Math.abs(hash % 21);
+  const mid = 80 + Math.abs((hash * 7) % 21);
+  const def = 80 + Math.abs((hash * 13) % 21);
+  return { att, mid, def };
+}
+
+function RatingBadge({ label, value }: { label: string; value: number }) {
+  const color = value >= 90 ? "text-result-win" : value >= 85 ? "text-champion-gold" : "text-muted-foreground";
+  return (
+    <div className="flex flex-col items-center">
+      <span className={`font-display text-sm font-bold ${color}`}>{value}</span>
+      <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</span>
+    </div>
+  );
+}
+
+const PlayerCard: React.FC<{ player: any; idx: number; isEliminated: boolean; isAdmin: boolean; fixturesGenerated: boolean; onRemove: (id: string) => void }> = ({
+  player: p, idx, isEliminated, isAdmin, fixturesGenerated, onRemove,
+}) => {
+  const ratings = useMemo(() => getPlayerRatings(p.id), [p.id]);
+
+  return (
+    <div
+      className={`group relative glass-strong rounded-xl border border-white/10 overflow-hidden card-hover slide-in-right ${isEliminated ? "opacity-30 grayscale" : ""}`}
+      style={{ animationDelay: `${idx * 50}ms` }}
+    >
+      {isAdmin && !fixturesGenerated && (
+        <button
+          onClick={() => onRemove(p.id)}
+          className="absolute top-2 right-2 z-20 rounded-full bg-destructive p-1.5 opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-lg"
+        >
+          <X className="h-3.5 w-3.5 text-destructive-foreground" />
+        </button>
+      )}
+
+      <div className="relative p-6 flex flex-col items-center">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 opacity-50" />
+        <div className="relative z-10 mb-3">
+          <div className={`h-20 w-20 md:h-24 md:w-24 rounded-full overflow-hidden border-2 border-primary/30 champion-glow flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 ${isAdmin ? "transition-transform group-hover:scale-110" : ""}`}>
+            {p.avatar ? (
+              <img src={p.avatar} alt={p.name} className="h-full w-full object-cover" />
+            ) : (
+              <span className="font-display text-3xl md:text-4xl font-bold text-primary">
+                {p.name[0]?.toUpperCase()}
+              </span>
+            )}
+          </div>
+        </div>
+        <h3 className="relative z-10 font-display text-base md:text-lg font-bold text-foreground text-center truncate w-full">
+          {p.name}
+        </h3>
+        {isEliminated && (
+          <span className="relative z-10 text-[10px] uppercase tracking-wider text-result-loss font-semibold mt-1">Eliminated</span>
+        )}
+        {/* Ratings */}
+        <div className="relative z-10 flex items-center gap-3 mt-3 pt-3 border-t border-white/10 w-full justify-center">
+          <RatingBadge label="ATT" value={ratings.att} />
+          <RatingBadge label="MID" value={ratings.mid} />
+          <RatingBadge label="DEF" value={ratings.def} />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const PlayerSetup: React.FC = () => {
   const { players, addPlayer, removePlayer, generateLeague, fixturesGenerated, isAdmin, eliminatedPlayerIds } = useLeague();
@@ -27,69 +99,11 @@ const PlayerSetup: React.FC = () => {
     if (fileRef.current) fileRef.current.value = "";
   };
 
-  if (!isAdmin) {
-    return (
-      <div className="space-y-6 fade-in">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight text-foreground">
-            Squad
-          </h2>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Users className="h-5 w-5" />
-            <span className="font-semibold">{players.length} players</span>
-          </div>
-        </div>
-
-        {players.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <Users className="h-12 w-12 mx-auto mb-4 text-primary/30" />
-            <p className="font-display text-xl font-semibold mb-2">No Players Yet</p>
-            <p className="text-sm">Players will appear here once added</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {players.map((p, idx) => {
-              const isEliminated = eliminatedPlayerIds.includes(p.id);
-              return (
-                <div
-                  key={p.id}
-                  className={`glass-strong rounded-xl border border-white/10 overflow-hidden card-hover slide-in-right ${isEliminated ? "opacity-30 grayscale" : ""}`}
-                  style={{ animationDelay: `${idx * 50}ms` }}
-                >
-                  <div className="relative p-6 flex flex-col items-center">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 opacity-50" />
-                    <div className="relative z-10 mb-4">
-                      <div className="h-20 w-20 md:h-24 md:w-24 rounded-full overflow-hidden border-2 border-primary/30 champion-glow flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-                        {p.avatar ? (
-                          <img src={p.avatar} alt={p.name} className="h-full w-full object-cover" />
-                        ) : (
-                          <span className="font-display text-3xl md:text-4xl font-bold text-primary">
-                            {p.name[0]?.toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <h3 className="relative z-10 font-display text-base md:text-lg font-bold text-foreground text-center truncate w-full">
-                      {p.name}
-                    </h3>
-                    {isEliminated && (
-                      <span className="relative z-10 text-[10px] uppercase tracking-wider text-result-loss font-semibold mt-1">Eliminated</span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-8 fade-in">
       <div className="flex items-center justify-between">
         <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight text-foreground">
-          Squad Registration
+          {isAdmin ? "Squad Registration" : "Squad"}
         </h2>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Users className="h-5 w-5" />
@@ -97,13 +111,11 @@ const PlayerSetup: React.FC = () => {
         </div>
       </div>
 
-      {!fixturesGenerated && (
+      {isAdmin && !fixturesGenerated && (
         <div className="glass-strong rounded-xl border border-white/10 p-6 space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 space-y-2">
-              <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
-                Player Name
-              </label>
+              <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Player Name</label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -113,9 +125,7 @@ const PlayerSetup: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
-                Avatar
-              </label>
+              <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Avatar</label>
               <input
                 ref={fileRef}
                 type="file"
@@ -125,11 +135,7 @@ const PlayerSetup: React.FC = () => {
               />
             </div>
             <div className="flex items-end">
-              <Button
-                onClick={handleAdd}
-                disabled={!name.trim()}
-                className="gap-2 h-11 px-6 bg-primary hover:bg-primary/90"
-              >
+              <Button onClick={handleAdd} disabled={!name.trim()} className="gap-2 h-11 px-6 bg-primary hover:bg-primary/90">
                 <UserPlus className="h-4 w-4" /> Add Player
               </Button>
             </div>
@@ -141,79 +147,36 @@ const PlayerSetup: React.FC = () => {
         <div className="text-center py-16 text-muted-foreground">
           <Users className="h-12 w-12 mx-auto mb-4 text-primary/30" />
           <p className="font-display text-xl font-semibold mb-2">No Players Yet</p>
-          <p className="text-sm">Add players to build your squad</p>
+          <p className="text-sm">{isAdmin ? "Add players to build your squad" : "Players will appear here once added"}</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {players.map((p, idx) => {
-            const isEliminated = eliminatedPlayerIds.includes(p.id);
-            return (
-              <div
-                key={p.id}
-                className={`group relative glass-strong rounded-xl border border-white/10 overflow-hidden card-hover slide-in-right ${isEliminated ? "opacity-30 grayscale" : ""}`}
-                style={{ animationDelay: `${idx * 50}ms` }}
-              >
-                {!fixturesGenerated && (
-                  <button
-                    onClick={() => removePlayer(p.id)}
-                    className="absolute top-2 right-2 z-20 rounded-full bg-destructive p-1.5 opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-lg"
-                  >
-                    <X className="h-3.5 w-3.5 text-destructive-foreground" />
-                  </button>
-                )}
-
-                <div className="relative p-6 flex flex-col items-center">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 opacity-50" />
-                  <div className="relative z-10 mb-4">
-                    <div className="h-20 w-20 md:h-24 md:w-24 rounded-full overflow-hidden border-2 border-primary/30 champion-glow flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 transition-transform group-hover:scale-110">
-                      {p.avatar ? (
-                        <img src={p.avatar} alt={p.name} className="h-full w-full object-cover" />
-                      ) : (
-                        <span className="font-display text-3xl md:text-4xl font-bold text-primary">
-                          {p.name[0]?.toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <h3 className="relative z-10 font-display text-base md:text-lg font-bold text-foreground text-center truncate w-full">
-                    {p.name}
-                  </h3>
-                  {isEliminated && (
-                    <span className="relative z-10 text-[10px] uppercase tracking-wider text-result-loss font-semibold mt-1">Eliminated</span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {players.map((p, idx) => (
+            <PlayerCard
+              key={p.id}
+              player={p}
+              idx={idx}
+              isEliminated={eliminatedPlayerIds.includes(p.id)}
+              isAdmin={isAdmin}
+              fixturesGenerated={fixturesGenerated}
+              onRemove={removePlayer}
+            />
+          ))}
         </div>
       )}
 
-      {!fixturesGenerated && players.length >= 2 && (
+      {isAdmin && !fixturesGenerated && players.length >= 2 && (
         <div className="glass-strong rounded-xl border border-white/10 p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
-                <label className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">
-                  Rounds:
-                </label>
+                <label className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">Rounds:</label>
                 <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-9 w-9 p-0 border-white/10 hover:bg-white/5"
-                    onClick={() => setNumLegs(Math.max(1, numLegs - 1))}
-                    disabled={numLegs <= 1}
-                  >
+                  <Button size="sm" variant="outline" className="h-9 w-9 p-0 border-white/10 hover:bg-white/5" onClick={() => setNumLegs(Math.max(1, numLegs - 1))} disabled={numLegs <= 1}>
                     <Minus className="h-4 w-4" />
                   </Button>
                   <span className="font-display text-xl font-bold w-10 text-center">{numLegs}</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-9 w-9 p-0 border-white/10 hover:bg-white/5"
-                    onClick={() => setNumLegs(Math.min(4, numLegs + 1))}
-                    disabled={numLegs >= 4}
-                  >
+                  <Button size="sm" variant="outline" className="h-9 w-9 p-0 border-white/10 hover:bg-white/5" onClick={() => setNumLegs(Math.min(4, numLegs + 1))} disabled={numLegs >= 4}>
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
@@ -228,7 +191,7 @@ const PlayerSetup: React.FC = () => {
           </div>
         </div>
       )}
-      {!fixturesGenerated && players.length < 2 && (
+      {isAdmin && !fixturesGenerated && players.length < 2 && (
         <div className="glass rounded-xl border border-white/10 p-6 text-center">
           <p className="text-sm text-muted-foreground">
             Add at least <span className="font-semibold text-foreground">2 players</span> to generate fixtures
