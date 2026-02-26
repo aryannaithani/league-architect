@@ -53,10 +53,10 @@ const Standings: React.FC = () => {
           <table className="w-full min-w-[600px]">
             <thead>
               <tr className="border-b border-white/10">
-                <th className="text-left px-3 md:px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-8 sticky left-0 z-20 bg-[hsl(var(--card))]">
+                <th className="text-left px-3 md:px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground w-8 sticky left-0 z-20 bg-[rgba(255,255,255,0.04)]">
                   #
                 </th>
-                <th className="text-left px-3 md:px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sticky left-8 z-20 bg-[hsl(var(--card))]">
+                <th className="text-left px-3 md:px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sticky left-8 z-20 bg-[rgba(255,255,255,0.04)]">
                   Player
                 </th>
                 <th className="text-center px-2 md:px-3 py-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">P</th>
@@ -81,7 +81,7 @@ const Standings: React.FC = () => {
                     key={s.playerId}
                     className="border-b border-white/5 transition-colors hover:bg-white/5 relative"
                   >
-                    <td className="px-3 md:px-4 py-3 relative sticky left-0 z-10 bg-[hsl(var(--card))]">
+                    <td className="px-3 md:px-4 py-3 relative sticky left-0 z-10 bg-[rgba(255,255,255,0.04)]">
                       {isQualified && (
                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-pitch rounded-r" />
                       )}
@@ -89,7 +89,7 @@ const Standings: React.FC = () => {
                         {i + 1}
                       </span>
                     </td>
-                    <td className="px-3 md:px-4 py-3 sticky left-8 z-10 bg-[hsl(var(--card))]">
+                    <td className="px-3 md:px-4 py-3 sticky left-8 z-10 bg-[rgba(255,255,255,0.04)]">
                       <div className="flex items-center gap-2.5">
                         <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center bg-secondary">
                           {player?.avatar ? (
