@@ -6,6 +6,8 @@ import Standings from "@/components/league/Standings";
 import Stats from "@/components/league/Stats";
 import Knockout from "@/components/league/Knockout";
 import AdminGate from "@/components/league/AdminGate";
+import UpdatingIndicator from "@/components/league/UpdatingIndicator";
+import { StandingsSkeleton, FixturesSkeleton, StatsSkeleton, PlayersSkeleton } from "@/components/league/LeagueSkeletons";
 import { Button } from "@/components/ui/button";
 import { Trophy, RotateCcw, Menu, X } from "lucide-react";
 import bgUcl from "@/assets/Gemini_Generated_Image_cj3bukcj3bukcj3b.jpg";
@@ -15,7 +17,7 @@ type Tab = "standings" | "fixtures" | "knockout" | "players" | "stats";
 const LeagueApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>("standings");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { isAdmin, resetLeague, fixturesGenerated } = useLeague();
+  const { isAdmin, resetLeague, fixturesGenerated, isUpdating, isCacheStale, isInitialLoad } = useLeague();
   const tabRefs = React.useRef<Record<Tab, HTMLButtonElement | null>>({ standings: null, fixtures: null, knockout: null, players: null, stats: null });
   const [underlineStyle, setUnderlineStyle] = React.useState<{ left: number; width: number }>({ left: 0, width: 0 });
 
@@ -56,8 +58,9 @@ const LeagueApp: React.FC = () => {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(210,100%,50%,0.1),transparent_70%)]" />
       </div>
 
+      <UpdatingIndicator isUpdating={isUpdating} isStale={isCacheStale} />
+
       <div className="relative z-10">
-        {/* Header */}
         <header className="sticky top-0 z-50 glass-strong border-b border-white/10">
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-14 md:h-16">
@@ -169,12 +172,24 @@ const LeagueApp: React.FC = () => {
 
         {/* Content */}
         <main className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-          <div className="fade-in">
-            {activeTab === "standings" && <Standings />}
-            {activeTab === "fixtures" && <Fixtures />}
-            {activeTab === "knockout" && <Knockout />}
-            {activeTab === "players" && <PlayerSetup />}
-            {activeTab === "stats" && <Stats />}
+          <div className={`transition-opacity duration-300 ${isUpdating ? "opacity-100" : "opacity-100"}`}>
+            {isInitialLoad ? (
+              <>
+                {activeTab === "standings" && <StandingsSkeleton />}
+                {activeTab === "fixtures" && <FixturesSkeleton />}
+                {activeTab === "knockout" && <PlayersSkeleton />}
+                {activeTab === "players" && <PlayersSkeleton />}
+                {activeTab === "stats" && <StatsSkeleton />}
+              </>
+            ) : (
+              <div className="fade-in">
+                {activeTab === "standings" && <Standings />}
+                {activeTab === "fixtures" && <Fixtures />}
+                {activeTab === "knockout" && <Knockout />}
+                {activeTab === "players" && <PlayerSetup />}
+                {activeTab === "stats" && <Stats />}
+              </div>
+            )}
           </div>
         </main>
       </div>
