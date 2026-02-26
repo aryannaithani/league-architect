@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { LeagueState, Player, Match, KnockoutMatch } from "@/lib/league-types";
 import { calculateStandings } from "@/lib/league-utils";
+import { getCache, setCache, isCacheStale, clearAllCache, CACHE_KEYS } from "@/lib/cache";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -24,6 +25,9 @@ interface LeagueContextType extends LeagueState {
   logoutAdmin: () => void;
   qualifiedPlayerIds: string[];
   eliminatedPlayerIds: string[];
+  isUpdating: boolean;
+  isCacheStale: boolean;
+  isInitialLoad: boolean;
 }
 
 const LeagueContext = createContext<LeagueContextType | null>(null);
@@ -36,34 +40,52 @@ export const useLeague = () => {
 
 function mapMatch(m: any): Match {
   return {
-    id: m.id,
-    round: m.round,
-    homeId: m.home_id,
-    awayId: m.away_id,
-    homeScore: m.home_score,
-    awayScore: m.away_score,
-    played: m.played,
+    id: m.id, round: m.round, homeId: m.home_id, awayId: m.away_id,
+    homeScore: m.home_score, awayScore: m.away_score, played: m.played,
   };
 }
 
 function mapKOMatch(m: any): KnockoutMatch {
   return {
-    id: m.id,
-    stage: m.stage,
-    matchIndex: m.match_index,
-    homeId: m.home_id,
-    awayId: m.away_id,
-    homeScore: m.home_score,
-    awayScore: m.away_score,
-    played: m.played,
+    id: m.id, stage: m.stage, matchIndex: m.match_index,
+    homeId: m.home_id, awayId: m.away_id,
+    homeScore: m.home_score, awayScore: m.away_score, played: m.played,
   };
 }
 
 export const LeagueProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, setState] = useState<LeagueState>(defaultState);
+  const [state, setState] = useState<LeagueState>(() => {
+    // Hydrate from cache immediately
+    const cachedPlayers = getCache<Player[]>(CACHE_KEYS.players);
+    const cachedMatches = getCache<Match[]>(CACHE_KEYS.matches);
+    const cachedState = getCache<{ fixtures_generated: boolean; league_complete: boolean }>(CACHE_KEYS.state);
+    const cachedKO = getCache<KnockoutMatch[]>(CACHE_KEYS.knockout);
+
+    if (cachedPlayers || cachedMatches || cachedState) {
+      return {
+        players: cachedPlayers?.data ?? [],
+        matches: cachedMatches?.data ?? [],
+        knockoutMatches: cachedKO?.data ?? [],
+        fixturesGenerated: cachedState?.data?.fixtures_generated ?? false,
+        leagueComplete: cachedState?.data?.league_complete ?? false,
+        isAdmin: false,
+      };
+    }
+    return defaultState;
+  });
+
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [cacheStale, setCacheStale] = useState(() =>
+    isCacheStale(CACHE_KEYS.players) || isCacheStale(CACHE_KEYS.matches)
+  );
+  const [isInitialLoad, setIsInitialLoad] = useState(() => {
+    // If we have cached data, it's not an initial load (we rendered cache)
+    return !getCache(CACHE_KEYS.players) && !getCache(CACHE_KEYS.matches);
+  });
 
   useEffect(() => {
     const loadData = async () => {
+      setIsUpdating(true);
       try {
         const [playersRes, matchesRes, stateRes, koRes] = await Promise.all([
           fetch(`${API_BASE}/players`),
@@ -71,10 +93,17 @@ export const LeagueProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           fetch(`${API_BASE}/state`),
           fetch(`${API_BASE}/knockout`),
         ]);
-        const players = await playersRes.json();
-        const matches = (await matchesRes.json()).map(mapMatch);
+        const players: Player[] = await playersRes.json();
+        const matches: Match[] = (await matchesRes.json()).map(mapMatch);
         const leagueState = await stateRes.json();
-        const koMatches = koRes.ok ? (await koRes.json()).map(mapKOMatch) : [];
+        const koMatches: KnockoutMatch[] = koRes.ok ? (await koRes.json()).map(mapKOMatch) : [];
+
+        // Update cache
+        setCache(CACHE_KEYS.players, players);
+        setCache(CACHE_KEYS.matches, matches);
+        setCache(CACHE_KEYS.state, { fixtures_generated: leagueState.fixtures_generated, league_complete: leagueState.league_complete || false });
+        setCache(CACHE_KEYS.knockout, koMatches);
+
         setState((s) => ({
           ...s,
           players,
@@ -83,42 +112,58 @@ export const LeagueProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           fixturesGenerated: leagueState.fixtures_generated,
           leagueComplete: leagueState.league_complete || false,
         }));
+        setCacheStale(false);
       } catch (error) {
         console.error("Failed to load data from backend:", error);
+      } finally {
+        setIsUpdating(false);
+        setIsInitialLoad(false);
       }
     };
     loadData();
   }, []);
 
-  // Derived: check if league is complete (all matches played)
   const leagueComplete = useMemo(() => {
     if (!state.fixturesGenerated || state.matches.length === 0) return false;
     return state.matches.every((m) => m.played);
   }, [state.fixturesGenerated, state.matches]);
 
-  // Derived: top 4 qualified player IDs
   const qualifiedPlayerIds = useMemo(() => {
     if (!state.fixturesGenerated) return [];
     const standings = calculateStandings(state.players, state.matches);
     return standings.slice(0, 4).map((s) => s.playerId);
   }, [state.players, state.matches, state.fixturesGenerated]);
 
-  // Derived: eliminated player IDs (not in top 4 after league is complete)
   const eliminatedPlayerIds = useMemo(() => {
     if (!leagueComplete) return [];
     return state.players.map((p) => p.id).filter((id) => !qualifiedPlayerIds.includes(id));
   }, [leagueComplete, state.players, qualifiedPlayerIds]);
 
+  const updateCacheAfterMutation = useCallback((partial: Partial<LeagueState>) => {
+    if (partial.players !== undefined) setCache(CACHE_KEYS.players, partial.players);
+    if (partial.matches !== undefined) setCache(CACHE_KEYS.matches, partial.matches);
+    if (partial.knockoutMatches !== undefined) setCache(CACHE_KEYS.knockout, partial.knockoutMatches);
+    if (partial.fixturesGenerated !== undefined || partial.leagueComplete !== undefined) {
+      setCache(CACHE_KEYS.state, {
+        fixtures_generated: partial.fixturesGenerated ?? state.fixturesGenerated,
+        league_complete: partial.leagueComplete ?? state.leagueComplete,
+      });
+    }
+  }, [state.fixturesGenerated, state.leagueComplete]);
+
   const addPlayer = useCallback(async (name: string, avatar: string) => {
     try {
       const res = await fetch(`${API_BASE}/players`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, avatar }),
       });
       if (!res.ok) throw new Error("Failed to add player");
       const player = await res.json();
-      setState((s) => ({ ...s, players: [...s.players, player] }));
+      setState((s) => {
+        const newPlayers = [...s.players, player];
+        setCache(CACHE_KEYS.players, newPlayers);
+        return { ...s, players: newPlayers };
+      });
     } catch (error) {
       console.error("Failed to add player:", error);
     }
@@ -128,7 +173,11 @@ export const LeagueProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       const res = await fetch(`${API_BASE}/players/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to remove player");
-      setState((s) => ({ ...s, players: s.players.filter((p) => p.id !== id) }));
+      setState((s) => {
+        const newPlayers = s.players.filter((p) => p.id !== id);
+        setCache(CACHE_KEYS.players, newPlayers);
+        return { ...s, players: newPlayers };
+      });
     } catch (error) {
       console.error("Failed to remove player:", error);
     }
@@ -139,7 +188,11 @@ export const LeagueProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const res = await fetch(`${API_BASE}/matches/generate?num_legs=${numLegs}`, { method: "POST" });
       if (!res.ok) throw new Error("Failed to generate fixtures");
       const matches = (await res.json()).map(mapMatch);
-      setState((s) => ({ ...s, matches, fixturesGenerated: true }));
+      setState((s) => {
+        setCache(CACHE_KEYS.matches, matches);
+        setCache(CACHE_KEYS.state, { fixtures_generated: true, league_complete: false });
+        return { ...s, matches, fixturesGenerated: true };
+      });
     } catch (error) {
       console.error("Failed to generate fixtures:", error);
     }
@@ -148,30 +201,27 @@ export const LeagueProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const updateMatchResult = useCallback(async (matchId: string, homeScore: number, awayScore: number) => {
     try {
       const res = await fetch(`${API_BASE}/matches/${matchId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ home_score: homeScore, away_score: awayScore }),
       });
       if (!res.ok) throw new Error("Failed to update match result");
       const updatedMatch = mapMatch(await res.json());
       setState((s) => {
         const newMatches = s.matches.map((m) => (m.id === matchId ? updatedMatch : m));
+        setCache(CACHE_KEYS.matches, newMatches);
         return { ...s, matches: newMatches };
       });
 
-      // Check if league is now complete and generate KO if needed
       setState((s) => {
         const allPlayed = s.matches.every((m) => m.played);
         if (allPlayed && s.knockoutMatches.length === 0) {
-          // Trigger KO generation
           fetch(`${API_BASE}/knockout/generate`, { method: "POST" })
             .then((r) => r.json())
             .then((koRaw) => {
-              setState((prev) => ({
-                ...prev,
-                knockoutMatches: koRaw.map(mapKOMatch),
-                leagueComplete: true,
-              }));
+              const koMatches = koRaw.map(mapKOMatch);
+              setCache(CACHE_KEYS.knockout, koMatches);
+              setCache(CACHE_KEYS.state, { fixtures_generated: true, league_complete: true });
+              setState((prev) => ({ ...prev, knockoutMatches: koMatches, leagueComplete: true }));
             })
             .catch(console.error);
         }
@@ -185,14 +235,13 @@ export const LeagueProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const updateKnockoutResult = useCallback(async (matchId: string, homeScore: number, awayScore: number) => {
     try {
       const res = await fetch(`${API_BASE}/knockout/${matchId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ home_score: homeScore, away_score: awayScore }),
       });
       if (!res.ok) throw new Error("Failed to update KO result");
-      // Refetch all KO matches to get updated bracket (final might have new players)
       const koRes = await fetch(`${API_BASE}/knockout`);
       const koMatches = (await koRes.json()).map(mapKOMatch);
+      setCache(CACHE_KEYS.knockout, koMatches);
       setState((s) => ({ ...s, knockoutMatches: koMatches }));
     } catch (error) {
       console.error("Failed to update KO result:", error);
@@ -203,6 +252,7 @@ export const LeagueProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       const res = await fetch(`${API_BASE}/league/reset`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to reset league");
+      clearAllCache();
       setState((s) => ({ ...defaultState, isAdmin: s.isAdmin }));
     } catch (error) {
       console.error("Failed to reset league:", error);
@@ -212,14 +262,10 @@ export const LeagueProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const loginAdmin = useCallback(async (password: string) => {
     try {
       const res = await fetch(`${API_BASE}/admin/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
-      if (res.ok) {
-        setState((s) => ({ ...s, isAdmin: true }));
-        return true;
-      }
+      if (res.ok) { setState((s) => ({ ...s, isAdmin: true })); return true; }
       return false;
     } catch (error) {
       console.error("Failed to login admin:", error);
@@ -236,16 +282,13 @@ export const LeagueProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       value={{
         ...state,
         leagueComplete,
-        addPlayer,
-        removePlayer,
-        generateLeague,
-        updateMatchResult,
-        updateKnockoutResult,
-        resetLeague,
-        loginAdmin,
-        logoutAdmin,
-        qualifiedPlayerIds,
-        eliminatedPlayerIds,
+        addPlayer, removePlayer, generateLeague,
+        updateMatchResult, updateKnockoutResult,
+        resetLeague, loginAdmin, logoutAdmin,
+        qualifiedPlayerIds, eliminatedPlayerIds,
+        isUpdating,
+        isCacheStale: cacheStale,
+        isInitialLoad,
       }}
     >
       {children}
