@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useCallback } from "react";
 import { useLeague } from "@/context/LeagueContext";
 import { calculateStandings } from "@/lib/league-utils";
 import { Match } from "@/lib/league-types";
@@ -6,6 +6,7 @@ import { TrendingUp } from "lucide-react";
 
 const Standings: React.FC = () => {
   const { players, matches, fixturesGenerated, qualifiedPlayerIds } = useLeague();
+  const hoverAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const getPlayerForm = (playerId: string, matches: Match[]): ("W" | "D" | "L")[] => {
     const playerMatches = matches
@@ -25,6 +26,44 @@ const Standings: React.FC = () => {
 
   const standings = useMemo(() => calculateStandings(players, matches), [players, matches]);
   const getPlayer = (id: string) => players.find((p) => p.id === id);
+
+  const playHoverAudio = useCallback((playerName?: string) => {
+    if (!playerName) return;
+    const normalized = String(playerName).trim().toLowerCase();
+
+    let file: string | null = null;
+    if (normalized === "naithani") {
+      file = "/audio/naithani.mp3";
+    } else if (normalized === "aryansh") {
+      file = "/audio/aryansh.mp3";
+    } else if (normalized === "davis") {
+      file = "/audio/davis.mp3";
+    }
+    if (!file) return;
+
+    try {
+      if (hoverAudioRef.current) {
+        hoverAudioRef.current.pause();
+        hoverAudioRef.current.currentTime = 0;
+      }
+      const audio = new Audio(file);
+      audio.volume = 0.6;
+      hoverAudioRef.current = audio;
+      audio.play().catch(() => {});
+    } catch (err) {
+      console.error("Failed to play hover audio (standings)", err);
+    }
+  }, []);
+
+  const stopHoverAudio = useCallback(() => {
+    if (!hoverAudioRef.current) return;
+    try {
+      hoverAudioRef.current.pause();
+      hoverAudioRef.current.currentTime = 0;
+    } catch {
+      // ignore
+    }
+  }, []);
 
   if (!fixturesGenerated) {
     return (
@@ -80,6 +119,10 @@ const Standings: React.FC = () => {
                   <tr
                     key={s.playerId}
                     className="border-b border-white/5 transition-colors hover:bg-white/5 relative"
+                    onMouseEnter={() => playHoverAudio(player?.name)}
+                    onMouseLeave={stopHoverAudio}
+                    onFocus={() => playHoverAudio(player?.name)}
+                    onBlur={stopHoverAudio}
                   >
                     <td className="px-3 md:px-4 py-3 relative sticky left-0 z-10 bg-[rgba(255,255,255,0.04)]">
                       {isQualified && (
