@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useCallback } from "react";
 import { useLeague } from "@/context/LeagueContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,8 +27,26 @@ function RatingBadge({ label, value }: { label: string; value: number }) {
   );
 }
 
-const PlayerCard: React.FC<{ player: any; idx: number; isEliminated: boolean; isAdmin: boolean; fixturesGenerated: boolean; onRemove: (id: string) => void }> = ({
-  player: p, idx, isEliminated, isAdmin, fixturesGenerated, onRemove,
+interface PlayerCardProps {
+  player: any;
+  idx: number;
+  isEliminated: boolean;
+  isAdmin: boolean;
+  fixturesGenerated: boolean;
+  onRemove: (id: string) => void;
+  onHoverStart: (player: any) => void;
+  onHoverEnd: () => void;
+}
+
+const PlayerCard: React.FC<PlayerCardProps> = ({
+  player: p,
+  idx,
+  isEliminated,
+  isAdmin,
+  fixturesGenerated,
+  onRemove,
+  onHoverStart,
+  onHoverEnd,
 }) => {
   const ratings = useMemo(() => getPlayerRatings(p.id), [p.id]);
 
@@ -36,6 +54,11 @@ const PlayerCard: React.FC<{ player: any; idx: number; isEliminated: boolean; is
     <div
       className={`group relative glass-strong rounded-xl border border-white/10 overflow-hidden card-hover slide-in-right ${isEliminated ? "opacity-30 grayscale" : ""}`}
       style={{ animationDelay: `${idx * 50}ms` }}
+      onMouseEnter={() => onHoverStart(p)}
+      onMouseLeave={onHoverEnd}
+      onFocus={() => onHoverStart(p)}
+      onBlur={onHoverEnd}
+      tabIndex={0}
     >
       {isAdmin && !fixturesGenerated && (
         <button
@@ -82,6 +105,7 @@ const PlayerSetup: React.FC = () => {
   const [avatar, setAvatar] = useState<string>("");
   const [numLegs, setNumLegs] = useState(2);
   const fileRef = useRef<HTMLInputElement>(null);
+  const hoverAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -98,6 +122,36 @@ const PlayerSetup: React.FC = () => {
     setAvatar("");
     if (fileRef.current) fileRef.current.value = "";
   };
+
+  const playHoverAudio = useCallback((player: any) => {
+    // Only play audio for the specific player "Naithani" (case-insensitive, trimmed)
+    if (!player?.name) return;
+    const normalized = String(player.name).trim().toLowerCase();
+    if (normalized !== "naithani") return;
+
+    try {
+      if (hoverAudioRef.current) {
+        hoverAudioRef.current.pause();
+        hoverAudioRef.current.currentTime = 0;
+      }
+      const audio = new Audio("/audio/naithani.mp3");
+      audio.volume = 0.6;
+      hoverAudioRef.current = audio;
+      audio.play().catch(() => {});
+    } catch (err) {
+      console.error("Failed to play hover audio", err);
+    }
+  }, []);
+
+  const stopHoverAudio = useCallback(() => {
+    if (!hoverAudioRef.current) return;
+    try {
+      hoverAudioRef.current.pause();
+      hoverAudioRef.current.currentTime = 0;
+    } catch {
+      // ignore
+    }
+  }, []);
 
   return (
     <div className="space-y-8 fade-in">
@@ -160,6 +214,8 @@ const PlayerSetup: React.FC = () => {
               isAdmin={isAdmin}
               fixturesGenerated={fixturesGenerated}
               onRemove={removePlayer}
+              onHoverStart={playHoverAudio}
+              onHoverEnd={stopHoverAudio}
             />
           ))}
         </div>
