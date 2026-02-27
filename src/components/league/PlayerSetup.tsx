@@ -133,6 +133,8 @@ const PlayerSetup: React.FC = () => {
       file = "/audio/naithani.mp3";
     } else if (normalized === "aryansh") {
       file = "/audio/aryansh.mp3";
+    } else if (normalized === "davis") {
+      file = "/audio/davis.mp3";
     }
     if (!file) return;
 
