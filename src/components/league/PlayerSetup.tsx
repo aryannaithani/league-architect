@@ -124,17 +124,24 @@ const PlayerSetup: React.FC = () => {
   };
 
   const playHoverAudio = useCallback((player: any) => {
-    // Only play audio for the specific player "Naithani" (case-insensitive, trimmed)
+    // Only play audio for specific players (case-insensitive, trimmed)
     if (!player?.name) return;
     const normalized = String(player.name).trim().toLowerCase();
-    if (normalized !== "naithani") return;
+
+    let file: string | null = null;
+    if (normalized === "naithani") {
+      file = "/audio/naithani.mp3";
+    } else if (normalized === "aryansh") {
+      file = "/audio/aryansh.mp3";
+    }
+    if (!file) return;
 
     try {
       if (hoverAudioRef.current) {
         hoverAudioRef.current.pause();
         hoverAudioRef.current.currentTime = 0;
       }
-      const audio = new Audio("/audio/naithani.mp3");
+      const audio = new Audio(file);
       audio.volume = 0.6;
       hoverAudioRef.current = audio;
       audio.play().catch(() => {});
